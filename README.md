@@ -2,11 +2,11 @@
 
 经常看到各大找房系统平台上，有类似这样的功能： 地图上显示当前城市的区，鼠标悬停上去，显示这个区的不规则的范围覆盖物。点击这个地区热点，显示这个地区下的详细 热点。 最近做项目也需要用到类似效果，找不到合适的，自己动手撸了一个，有需要的朋友可以做下参考。
 
- 老规则，先上效果图：
- ![显示区域覆盖物](http://img.blog.csdn.net/20171006173851827?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMjQyMzU1Nw==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+ 先上效果图：
+ ![显示区域覆盖物](https://github.com/loycoder/-Overlay-Q-/blob/master/images/preview.png)
 
 点击区域后显示：
-![这里写图片描述](http://img.blog.csdn.net/20171006173931965?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMjQyMzU1Nw==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+![这里写图片描述](https://github.com/loycoder/-Overlay-Q-/blob/master/images/click-preview.png)
 
  
 ####大概说下实现思路：

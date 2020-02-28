@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>仿房产网</title>
+</head>
+<body>
+<script type="text/javascript" src="./js/guangzhou_data.js"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=uzMdOehOj94huBKKo2bCZv8V7Ebx3HU3"></script>
+
+<style type="text/css">
+    #allmap {
+        overflow: hidden;
+        text-align: left;
+        z-index: 0;
+        width: 1500px;
+        height: 800px;
+    }
+
+    .house-tips {
+        position: absolute;
+    }
+
+    .house-tips .trigger {
+        height: 26px;
+        line-height: 26px;
+        font-size: 0;
+        background-color: #53b50a;
+        border-radius: 2px;
+        box-shadow: 1px 2px 2px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .house-tips .trigger .left {
+        position: relative;
+        color: #fff;
+        padding: 0 7px;
+    }
+
+    .house-tips .trigger span {
+        font-size: 12px;
+        display: inline-block;
+        vertical-align: top;
+        white-space: nowrap;
+    }
+
+    .house-tips .trigger .center {
+        padding: 0 8px;
+        background-color: #fff;
+    }
+
+    div.house-tips .arrow {
+        position: absolute;
+        left: 50%;
+        bottom: -4px;
+        margin-left: -4px;
+        width: 8px;
+        height: 4px;
+        background: url("map-icons.png") no-repeat -461px -70px;
+        display: block;
+        line-height: 0;
+        overflow: hidden;
+    }
+
+    div.house-tips .cur {
+        background-color: #f91;
+    }
+
+    div.house-tips i.arrow_cur {
+        background-position: -461px -76px;
+    }
+</style>
+<div class="mod-map" id="allmap" mod-id="map"></div>
+
+<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.js"></script>
+
+<script type="text/javascript">
+
+    // 初始化百度地图
+    var mp = new BMap.Map("allmap", {minZoom: 12, maxZoom: 16});
+    // mp.centerAndZoom(new BMap.Point(114.21332952038, 22.663330039461), 15);
+    mp.centerAndZoom('广州', 13);
+
+    mp.enableScrollWheelZoom();
+
+    /**
+     * =======================================================================
+     * 定义圆形覆盖物的构造函数 【一级覆盖物,（本质上一级覆盖物和二级覆盖物用的都是同一个实体ComplexCustomOverlay生成）】
+     */
+    function ComplexCustomOverlay(lon, lat, text, text1, index, type, id) {
+        this._point = new BMap.Point(lon, lat);
+        this._lon = lon;
+        this._lat = lat;
+        this._text = text;
+        this._text1 = text1;
+        this._index = index;
+        this._type = type;
+        this._id = id;
+    }
+
+    // 继承API的BMap.Overlay
+    ComplexCustomOverlay.prototype = new BMap.Overlay();
+
+    //初始化自定义圆形覆盖物
+    ComplexCustomOverlay.prototype.initialize = function (map) {
+        // 保存map对象实例
+        this._map = map;
+        // 创建div元素，作为自定义覆盖物的容器
+        var div = this._div = document.createElement("div");
+        div.style.position = "absolute";
+        div.style.zIndex = BMap.Overlay.getZIndex(this._point.lat);
+        div.style.backgroundColor = "#3EC158";
+        div.style.borderRadius = "50%";
+        div.style.color = "white";
+        div.style.height = "90px";
+        div.style.width = "90px";
+        div.style.lineHeight = "22px";
+        div.style.textAlign = "center";
+        div.style.padding = "2px";
+        div.style.whiteSpace = "nowrap";
+        div.style.MozUserSelect = "none";
+        div.style.fontSize = "14px";
+        var span = this._span = document.createElement("div");
+        var span1 = this._span = document.createElement("div");
+        span.style.marginTop = "25px";
+        div.appendChild(span);
+        div.appendChild(span1);
+        span.appendChild(document.createTextNode(this._text));
+        span1.appendChild(document.createTextNode(this._text1 + ""));
+        var that = this;
+        if (this._type == "1") {	//行政区
+
+            /**
+             * 为一级覆盖物绑定点击事件
+             */
+            div.onclick = function (e) {
+
+                lon = that._lon;
+                lat = that._lat;
+                id = that._id;
+
+                mp.centerAndZoom(new BMap.Point(lon, lat), 15); //以当前地点为中心
+
+                mp.setZoom(16);
+                addThirdlyOverlay();
+            }
+
+            div.onmouseover = function () {
+                polygon1[that._index].show();
+            }
+            div.onmouseout = function () {
+                polygon1[that._index].hide();
+            }
+        } else {
+            div.onclick = function (e) {
+                console.log('test');
+            }
+            div.onmouseover = function () {
+                polygon2[that._index].show();
+            }
+            div.onmouseout = function () {
+                polygon2[that._index].hide();
+            }
+        }
+
+        mp.getPanes().labelPane.appendChild(div);
+        // 需要将div元素作为方法的返回值，当调用该覆盖物的show, hide方法，或者对覆盖物进行移除时，API都将操作此元素。
+        return div;
+    }
+
+    //绘制圆形覆盖物
+    ComplexCustomOverlay.prototype.draw = function () {
+        var map = this._map;
+        // 根据地理坐标转换为像素坐标，并设置给容器
+        var pixel = map.pointToOverlayPixel(this._point);
+        this._div.style.left = pixel.x - 50 + "px";
+        this._div.style.top = pixel.y - 30 + "px";
+    }
+
+
+    /**
+     * =======================================================================
+     * 自定义小区矩形覆盖物 【三级覆盖物】
+     */
+    function ComplexCustomOverlay1(point, text, mouseoverText, id) {
+        this._point = point;
+        this._text = text;
+        this._overText = mouseoverText;
+        this._id = id;
+    }
+
+    ComplexCustomOverlay1.prototype = new BMap.Overlay();
+
+    /**
+     * 小区实体构造方法
+     * @param map
+     * @returns {Element}
+     */
+    ComplexCustomOverlay1.prototype.initialize = function (map) {
+
+        this._map = map, that = this;
+        var tag = $('<div class="house-tips" data-id="' + that._id + '"><p class="trigger"><span class="left"><i class="arrow"></i>' + that._text + '</span> <span class="center">' + that._overText + '套</span></p></div>')[0];
+        this._div = tag;
+
+
+        $(tag).bind({
+
+            click: function () {
+                var ef = window.location.href;
+                window.location.href = ef + "&xq=" + that._id;
+
+            },
+            mouseover: function () {
+                $(this).find('.trigger').addClass('cur').find('i').addClass('arrow_cur');
+            },
+
+            mouseout: function () {
+                $(this).find('.trigger').removeClass('cur').find('i').removeClass('arrow_cur');
+            }
+        });
+
+        mp.getPanes().labelPane.appendChild(tag);
+        return this._div;
+    }
+
+
+    ComplexCustomOverlay1.prototype.draw = function () {
+
+        var pixel = this._map.pointToOverlayPixel(this._point);
+
+        this._div.style.left = pixel.x - parseInt(10) + "px";
+        this._div.style.top = pixel.y - 30 + "px";
+    }
+
+
+    /**
+     * 地图缩放监听，不同级别显示不同的覆盖物
+     */
+    mp.addEventListener('zoomend', function (e) {
+
+        var x = this.getZoom();	// 这里的this就是map实例
+
+        console.log(x);
+        if (x <= 14) {
+            for (var i = 0; i < myOverlay1.length; i++) {
+                myOverlay1[i].show();
+            }
+            for (var i = 0; i < myOverlay2.length; i++) {
+                myOverlay2[i].hide();
+            }
+            if (typeof(xqOverlay) != "undefined") {
+                for (var i = 0; i < xqOverlay.length; i++) {
+                    xqOverlay[i].hide();
+                }
+            }
+        } else {
+            for (var i = 0; i < myOverlay1.length; i++) {
+                myOverlay1[i].hide();
+            }
+            for (var i = 0; i < myOverlay2.length; i++) {
+                myOverlay2[i].hide();
+            }
+            if (typeof(xqOverlay) != "undefined") {
+                for (var i = 0; i < xqOverlay.length; i++) {
+                    xqOverlay[i].show();
+                }
+            }
+        }
+
+        /* else if (x >= 14 && x < 16) {
+         for (var i = 0; i < myOverlay1.length; i++) {
+         myOverlay1[i].hide();
+         }
+         for (var i = 0; i < myOverlay2.length; i++) {
+         myOverlay2[i].show();
+         }
+         if (typeof(xqOverlay) != "undefined") {
+         for (var i = 0; i < xqOverlay.length; i++) {
+         xqOverlay[i].hide();
+         }
+         }
+         } else if (x >= 16) {
+         for (var i = 0; i < myOverlay1.length; i++) {
+         myOverlay1[i].hide();
+         }
+         for (var i = 0; i < myOverlay2.length; i++) {
+         myOverlay2[i].hide();
+         }
+         if (typeof(xqOverlay) != "undefined") {
+         for (var i = 0; i < xqOverlay.length; i++) {
+         xqOverlay[i].show();
+         }
+         }
+         }*/
+    });
+
+
+    /**
+     * 添加一级覆盖物
+     */
+    var polygon1 = []; //一级覆盖物存储的多边形区域
+    var myOverlay1 = [];  //一级覆盖物热点
+
+    function addFirstOverlay() {
+
+        //存放所有的行政区级圆形覆盖物
+        for (var i = 0; i < district.length; i++) {
+
+            //添加行政区多边形覆盖物
+            polygon1[i] = new BMap.Polygon(district[i].position_border, {
+                strokeColor: "#31C14D",
+                strokeWeight: 4,
+                strokeOpacity: 0.7
+            });
+
+            //创建多边形
+            mp.addOverlay(polygon1[i]);
+
+            polygon1[i].hide();
+
+            //添加行政区圆形覆盖物
+            myOverlay1[i] = new ComplexCustomOverlay(district[i].longitude, district[i].latitude, district[i].name, district[i].house_count, i, 1, district[i].id);
+            mp.addOverlay(myOverlay1[i]);
+        }
+    }
+
+
+    /**
+     * 添加二级覆盖物
+     */
+    var polygon2 = [];
+    var myOverlay2 = [];	//存放所有的区级圆形覆盖物
+    function addSecondOverlay() {
+        for (var i = 0; i < area.length; i++) {
+
+            var point = new BMap.Point(area[i].longitude, area[i].latitude);
+
+            //添加区多边形覆盖物
+            var list = area[i].position_border.split(";");
+            for (var j = 0; j < list.length; j++) {
+                var ll = list[j].split(",");
+                list[j] = new BMap.Point(ll[0], ll[1]);
+            }
+            polygon2[i] = new BMap.Polygon(list, {strokeColor: "red", strokeWeight: 1, strokeOpacity: 0.5});  //创建多边形
+            mp.addOverlay(polygon2[i]);
+
+            polygon2[i].hide();
+            //添加自定义覆盖物
+            myOverlay2[i] = new ComplexCustomOverlay(area[i].longitude, area[i].latitude, area[i].name, area[i].house_count, i, 2, area[i].id);
+            mp.addOverlay(myOverlay2[i]);
+            myOverlay2[i].hide();
+        }
+    }
+
+    /**
+     * 添加三级覆盖物
+     */
+    var xqOverlay = []; //小区覆盖物
+
+    function addThirdlyOverlay() {
+
+        for (var i = 0; i < xiaoqu.length; i++) {
+            var a = xiaoqu[i].coordinate.split(",");
+            var point = new BMap.Point(a[0], a[1]);
+            xqOverlay[i] = new ComplexCustomOverlay1(point, xiaoqu[i].title, xiaoqu[i].hscount, xiaoqu[i].id);
+            mp.addOverlay(xqOverlay[i]);
+        }
+    }
+    /*=================================================*/
+    addFirstOverlay();
+
+
+</script>
+</body>
+</html>
